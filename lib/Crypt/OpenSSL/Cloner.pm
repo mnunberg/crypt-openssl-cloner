@@ -15,7 +15,9 @@ use Convert::ASN1;
 use Crypt::OpenSSL::Cloner::x509asn1;
 
 our $PREFERRED_ALG = "sha1";
+our $PREFERRED_KEYLENGTH = 1024;
 our $CA_BASENAME = "CA";
+our $VERSION = 0.01;
 
 my $ASN = Convert::ASN1->new();
 $ASN->prepare($Crypt::OpenSSL::Cloner::x509asn1::ASN_DEF,
@@ -67,7 +69,7 @@ sub load_ca {
 
 sub _gen_new_ca {
     my ($self,$dn_hash) = @_;
-    my $rsa = Crypt::OpenSSL::RSA->generate_key(1024);
+    my $rsa = Crypt::OpenSSL::RSA->generate_key($PREFERRED_KEYLENGTH);
     my $privkey = Crypt::OpenSSL::CA::PrivateKey->parse(
         $rsa->get_private_key_string
     );
@@ -91,7 +93,7 @@ sub _gen_new_ca {
     #                   "digitalSignature, nonRepudiation,".
     #                   "keyEncipherment, dataEncipherment, keyAgreement,".
     #                   "keyCertSign, cRLSign");
-    my $crt_text = $ca->sign($privkey, "sha1");
+    my $crt_text = $ca->sign($privkey, $PREFERRED_ALG);
     return [$ca,$privkey,$crt_text,$rsa->get_private_key_string];
 }
 
@@ -215,75 +217,8 @@ sub clone_cert {
         }
     }
     $new_cert->set_extension("subjectAltName", $alt_name_string) if $alt_name_string;
-    my $new_pem = $new_cert->sign($self->{PRIVKEY_OBJ}, "sha1");
+    my $new_pem = $new_cert->sign($self->{PRIVKEY_OBJ}, $PREFERRED_ALG);
     return ($new_pem, $keystr);
-}
-
-
-if (!caller) {
-#my $TEST_CERT = <<PEM;
-#-----BEGIN CERTIFICATE-----
-#MIIFVTCCBD2gAwIBAgIHBGX+dPs18DANBgkqhkiG9w0BAQUFADCByjELMAkGA1UE
-#BhMCVVMxEDAOBgNVBAgTB0FyaXpvbmExEzARBgNVBAcTClNjb3R0c2RhbGUxGjAY
-#BgNVBAoTEUdvRGFkZHkuY29tLCBJbmMuMTMwMQYDVQQLEypodHRwOi8vY2VydGlm
-#aWNhdGVzLmdvZGFkZHkuY29tL3JlcG9zaXRvcnkxMDAuBgNVBAMTJ0dvIERhZGR5
-#IFNlY3VyZSBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTERMA8GA1UEBRMIMDc5Njky
-#ODcwHhcNMDkxMjExMDUwMjM2WhcNMTQxMjExMDUwMjM2WjBRMRUwEwYDVQQKEwwq
-#LmdpdGh1Yi5jb20xITAfBgNVBAsTGERvbWFpbiBDb250cm9sIFZhbGlkYXRlZDEV
-#MBMGA1UEAxMMKi5naXRodWIuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIB
-#CgKCAQEA7dOJw11wcgnzM08acnTZtlqVULtoYZ/3+x8Z4doEMa8VfBp/+XOvHeVD
-#K1YJAEVpSujEW9/Cd1JRGVvRK9k5ZTagMhkcQXP7MrI9n5jsglsLN2Q5LLcQg3LN
-#8OokS/rZlC7DhRU5qTr2iNr0J4mmlU+EojdOfCV4OsmDbQIXlXh9R6hVg+4TyBka
-#szzxX/47AuGF+xFmqwldn0xD8MckXilyKM7UdWhPJHIprjko/N+NT02Dc3QMbxGb
-#p91i3v/i6xfm/wy/wC0xO9ZZovLdh0pIe20zERRNNJ8yOPbIGZ3xtj3FRu9RC4rG
-#M+1IYcQdFxu9fLZn6TnPpVKACvTqzQIDAQABo4IBtjCCAbIwDwYDVR0TAQH/BAUw
-#AwEBADAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwDgYDVR0PAQH/BAQD
-#AgWgMDMGA1UdHwQsMCowKKAmoCSGImh0dHA6Ly9jcmwuZ29kYWRkeS5jb20vZ2Rz
-#MS0xMS5jcmwwUwYDVR0gBEwwSjBIBgtghkgBhv1tAQcXATA5MDcGCCsGAQUFBwIB
-#FitodHRwOi8vY2VydGlmaWNhdGVzLmdvZGFkZHkuY29tL3JlcG9zaXRvcnkvMIGA
-#BggrBgEFBQcBAQR0MHIwJAYIKwYBBQUHMAGGGGh0dHA6Ly9vY3NwLmdvZGFkZHku
-#Y29tLzBKBggrBgEFBQcwAoY+aHR0cDovL2NlcnRpZmljYXRlcy5nb2RhZGR5LmNv
-#bS9yZXBvc2l0b3J5L2dkX2ludGVybWVkaWF0ZS5jcnQwHwYDVR0jBBgwFoAU/axh
-#MpNsRdbi7oVfmrrndplozOcwIwYDVR0RBBwwGoIMKi5naXRodWIuY29tggpnaXRo
-#dWIuY29tMB0GA1UdDgQWBBSH0Y8ZbuSHb1OMd5EHUN+jv1VHIDANBgkqhkiG9w0B
-#AQUFAAOCAQEAwIe/Bbuk1/r38aqb5wlXjoW6tAmLpzLRkKorDOcDUJLtN6a9XqAk
-#cgMai7NCI1YV+A4IjEENj53mV2xWLpniqLDHI5y2NbQuL2deu1jQSSNz7xE/nZCk
-#WGt8OEtm6YI2bUsq5EXy078avRbigBko1bqtFuG0s5+nFrKCjhQVIk+GX7cwiyr4
-#XJ49FxETvePrxNYr7x7n/Jju59KXTw3juPET+bAwNlRXmScjrMylMNUMr3sFcyLz
-#DciaVnnextu6+L0w1+5KNVbMKndRwgg/cRldBL4AgmtouTC3mlDGGG3U6eV75cdH
-#D03DXDfrYYjxmWjTRdO2GdbYnt1ToEgxyA==
-#-----END CERTIFICATE-----
-#PEM
-
-#GOOGLE:
-my $TEST_CERT = <<PEM;
------BEGIN CERTIFICATE-----
-MIIDIjCCAougAwIBAgIQHxn23jXdY6FCkYrVLMCrEjANBgkqhkiG9w0BAQUFADBM
-MQswCQYDVQQGEwJaQTElMCMGA1UEChMcVGhhd3RlIENvbnN1bHRpbmcgKFB0eSkg
-THRkLjEWMBQGA1UEAxMNVGhhd3RlIFNHQyBDQTAeFw0wOTEyMTgwMDAwMDBaFw0x
-MTEyMTgyMzU5NTlaMGkxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlh
-MRYwFAYDVQQHFA1Nb3VudGFpbiBWaWV3MRMwEQYDVQQKFApHb29nbGUgSW5jMRgw
-FgYDVQQDFA9tYWlsLmdvb2dsZS5jb20wgZ8wDQYJKoZIhvcNAQEBBQADgY0AMIGJ
-AoGBANknyBHye+RFyUa2Y3WDsXd+F0GJgDjxRSegPNnoqABL2QfQut7t9CymrNwn
-E+wMwaaZF0LmjSfSgRSwS4L6ssXQuyBZYiijlrVh9nbBbUbS/brGDz3RyXeaWDP2
-BnYyrVFfKV9u+BKLrebFCDmzQ0OpW5Ed1+PPUd91WY6NgKtTAgMBAAGjgecwgeQw
-DAYDVR0TAQH/BAIwADA2BgNVHR8ELzAtMCugKaAnhiVodHRwOi8vY3JsLnRoYXd0
-ZS5jb20vVGhhd3RlU0dDQ0EuY3JsMCgGA1UdJQQhMB8GCCsGAQUFBwMBBggrBgEF
-BQcDAgYJYIZIAYb4QgQBMHIGCCsGAQUFBwEBBGYwZDAiBggrBgEFBQcwAYYWaHR0
-cDovL29jc3AudGhhd3RlLmNvbTA+BggrBgEFBQcwAoYyaHR0cDovL3d3dy50aGF3
-dGUuY29tL3JlcG9zaXRvcnkvVGhhd3RlX1NHQ19DQS5jcnQwDQYJKoZIhvcNAQEF
-BQADgYEAicju7fexy+yRP2drx57Tcqo+BElR1CiHNZ1nhPmS9QSZaudDA8jy25IP
-VWvjEgaq13Hro0Hg32ZNVK53qcXwjWtnCAReojvNwj6/x1Ciq5B6D7E6eiYDSfXJ
-8/a2vR5IbgY89nq+wuHaA6vspH6vNR848xO3z1PQ7BrIjnYQ1A0=
------END CERTIFICATE-----
-PEM
-    use Carp qw(confess);
-    $SIG{__DIE__} = sub { confess $_[0] };
-    
-    my $CA = __PACKAGE__->new();
-    my ($pem, $privkey) = $CA->clone_cert($TEST_CERT);
-    write_file($CA->{PATH} . "/dummy.pem", \$pem);
-    write_file($CA->{PATH} . "/dummy.key", \$privkey);
 }
 
 1;
@@ -292,7 +227,8 @@ __END__
 
 =head1 NAME
 
-Crypt::OpenSSL::Cloner - Clone an existing certificate.
+Crypt::OpenSSL::Cloner - Clone an existing certificate and sign it with your own
+CA
 
 =head1 SYNOPSIS
 
@@ -339,3 +275,35 @@ synopsis)
 Clones an existing certificate. It takes one argument, which is a PEM blob.
 It returns a pair of ($new_pem,$new_rsa_key). You are free to save it, if you
 wish.
+
+=head2 PACKAGE/CONFIGURATION VARIABLES
+
+There are some package variables which control some trivial aspects of this module
+
+=over
+
+=item PREFERRED_ALG
+
+The preferred algorithm to use for creating new private keys. An appropriate
+value is one accepted by the L<Crypt::OpenSSL::CA>::X509->sign method.
+
+=item PREFERRED_KEYLENGTH
+
+Keylength to use for private keys. As always, this must be a power of two
+
+=item CA_BASENAME
+
+What the CA files will be called within the CA directory. They will live there
+in the format of $CA_BASENAME.pem and $CA_BASENAME.key
+
+=back
+
+=head1 LICENSE & COPYRIGHT
+
+Copyright 2011 M. Nunberg
+
+All rights are reserved. Crypt::OpenSSL::Cloner is free software;
+you may redistribute it and/or modify it under the same terms as Perl itself.
+
+This product includes software developed by the OpenSSL Project
+for use in the OpenSSL Toolkit. (http://www.openssl.org/)
