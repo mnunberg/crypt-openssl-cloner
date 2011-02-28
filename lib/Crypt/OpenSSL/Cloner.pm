@@ -17,7 +17,7 @@ use Crypt::OpenSSL::Cloner::x509asn1;
 our $PREFERRED_ALG = "sha1";
 our $PREFERRED_KEYLENGTH = 1024;
 our $CA_BASENAME = "CA";
-our $VERSION = 0.01;
+our $VERSION = 0.02;
 
 my $ASN = Convert::ASN1->new();
 $ASN->prepare($Crypt::OpenSSL::Cloner::x509asn1::ASN_DEF,
@@ -76,6 +76,7 @@ sub _gen_new_ca {
     my $ca = Crypt::OpenSSL::CA::X509->new($privkey->get_public_key);
     my $dn = Crypt::OpenSSL::CA::X509_NAME->new(%$dn_hash);
     my $keyid = $privkey->get_public_key->get_openssl_keyid();
+	die "Need Distinguished Name for CA" if !$dn_hash;
     $ca->set_serial("0x1");
     $ca->set_notBefore("20080204101500Z");
     $ca->set_notAfter("20220204101500Z");
@@ -120,7 +121,7 @@ sub new {
         ($ca_obj,$privkey_obj) = @$res;
     } else {
         my ($pem,$keytxt);
-        ($ca_obj,$privkey_obj,$pem,$keytxt) = @{ $self->_gen_new_ca() };
+        ($ca_obj,$privkey_obj,$pem,$keytxt) = @{ $self->_gen_new_ca($dn_hash) };
         write_file($path . "/$CA_BASENAME.pem", $pem);
         write_file($path . "/$CA_BASENAME.key", $keytxt);
     }
