@@ -4,7 +4,7 @@ use warnings;
 use Crypt::OpenSSL::CA;
 use Crypt::OpenSSL::RSA;
 use File::Slurp qw(read_file write_file);
-use File::Path qw(make_path);
+use File::Path qw(mkpath);
 use Hash::Util qw(lock_keys);
 use Data::Dumper;
 use Time::HiRes;
@@ -112,7 +112,7 @@ sub new {
         CN => 'CertOnTheFly Root' 
     };
     
-    make_path($path);
+    mkpath($path);
     $self->{PATH} = $path;
     
     my ($ca_obj,$privkey_obj);
