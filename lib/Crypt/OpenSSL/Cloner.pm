@@ -17,7 +17,7 @@ use Crypt::OpenSSL::Cloner::x509asn1;
 our $PREFERRED_ALG = "sha1";
 our $PREFERRED_KEYLENGTH = 1024;
 our $CA_BASENAME = "CA";
-our $VERSION = 0.02;
+our $VERSION = 0.03;
 
 my $ASN = Convert::ASN1->new();
 $ASN->prepare($Crypt::OpenSSL::Cloner::x509asn1::ASN_DEF,
