@@ -6,7 +6,7 @@ use Test::More;
 use File::Temp qw(tempdir);
 
 BEGIN {
-    use_ok("Crypt::OpenSSL::Cloner", "use our module");
+    use_ok("Crypt::OpenSSL::Cloner");
 }
 
 my $tmpdir = tempdir(CLEANUP => 1);
